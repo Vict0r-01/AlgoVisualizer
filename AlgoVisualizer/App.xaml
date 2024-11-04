@@ -1,0 +1,17 @@
+﻿<Application x:Class="AlgoVisualizer.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="clr-namespace:AlgoVisualizer"
+             StartupUri="MainWindow.xaml">
+    <Application.Resources>
+         <ResourceDictionary>
+             <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="Theme/MenuTheme.xaml"/>
+                <ResourceDictionary Source="Theme/ButtonTheme.xaml"/>
+                <ResourceDictionary Source="Theme/ComboBoxTheme.xaml"/>
+                <ResourceDictionary Source="Theme/LogTheme.xaml"/>
+                <ResourceDictionary Source="Theme/ArrayTheme.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+         </ResourceDictionary>
+    </Application.Resources>
+</Application>

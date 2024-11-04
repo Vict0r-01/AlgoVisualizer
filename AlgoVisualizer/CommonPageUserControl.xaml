@@ -1,0 +1,71 @@
+﻿<UserControl x:Class="AlgoVisualizer.CommonPageUserControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:AlgoVisualizer"
+             xmlns:algoVisualizer="clr-namespace:AlgoVisualizer"
+             mc:Ignorable="d" 
+             d:DesignHeight="650" 
+             d:DesignWidth="860">
+
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="70"/>
+            <ColumnDefinition/>
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="{Binding LogHeight}"/>
+        </Grid.RowDefinitions>
+        <Border Grid.Column="0" BorderBrush="Black" 
+                BorderThickness="0, 0, 1 ,0" 
+                Grid.RowSpan="2"
+                Padding="5">
+            <StackPanel>
+                <Button Content="Add" 
+            Style="{StaticResource ButtonStyle}"/>
+                <Button Content="Refresh"
+            Style="{StaticResource ButtonStyle}"
+            Command="{Binding GenericCommand}"
+            CommandParameter="Refresh"/>
+                <Button Name="Play" Content="{Binding ContentPlayButton}"
+            Style="{StaticResource ButtonStyle}"
+            Command ="{Binding PlayCommand}"
+            CommandParameter="{Binding ParentIdentifier, RelativeSource={RelativeSource AncestorType=UserControl}}"/>
+                <ComboBox Name="SpeedSelector" 
+              ItemsSource="{Binding Speeds}"
+              SelectedIndex="{Binding SelectedSpeed}"
+              Style="{StaticResource ComboBoxStyle}"/>
+
+                <Button Content="log" 
+            Style="{StaticResource ButtonStyle}"
+            Command="{Binding GenericCommand}" CommandParameter="Log"/>
+            </StackPanel>
+        </Border>
+
+        <ScrollViewer Grid.Row="0" Grid.Column="1">
+            <Grid Name="DynamicGrid">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                <ItemsControl Name="ArrayControl" Grid.Row="{Binding StepHeight}"  ItemsSource="{Binding SampleArray}" 
+                              Background="Transparent"
+                              Style="{StaticResource ArrayStyle}">
+                </ItemsControl>
+            </Grid>
+        </ScrollViewer>
+        
+        
+        <Border Grid.Column="1" Grid.Row="1"
+                CornerRadius="10"
+                Background="Black">
+            <ScrollViewer>
+                <TextBlock Style="{StaticResource LogStyle}"
+                           Text="{Binding LogText}"/>
+            </ScrollViewer>
+            
+        </Border>
+
+    </Grid>
+</UserControl>
