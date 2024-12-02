@@ -23,14 +23,5 @@ namespace AlgoVisualizer
                 viewModel.BackgroundRec = new Rect(0, 0, e.NewSize.Width, e.NewSize.Height);
             }
         }
-
-        private void IsGraph_Click(object sender, RoutedEventArgs e)
-        {
-            if (DataContext is MainViewModel viewModel)
-            {
-                viewModel.isGraph = true;
-            }
-
-        }
     }
 }

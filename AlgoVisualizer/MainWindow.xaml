@@ -54,8 +54,12 @@
                               CommandParameter="FibonacciSearch"/>
                 </MenuItem>
                 <MenuItem Header="Graphs" Style="{StaticResource MenuParentStyle}" >
-                    <MenuItem Header="Dj"
-                              Click="IsGraph_Click"/>
+                    <MenuItem Header="Dijkstra's Shortest Algorithm"
+                              Command="{Binding NavTo}"
+                              CommandParameter="Dijkstra"/>
+                    <MenuItem Header="Kruskal's Shortest Algorithm"
+                              Command="{Binding NavTo}"
+                              CommandParameter="Kruskal"/> 
                 </MenuItem>
             </Menu>
 

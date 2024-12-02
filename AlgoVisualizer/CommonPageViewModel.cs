@@ -1,8 +1,14 @@
-﻿using System.Collections.ObjectModel;
+﻿using System;
+using System.CodeDom;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Diagnostics;
+using System.Numerics;
 using System.Windows;
+using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Shapes;
 
 namespace AlgoVisualizer
 {
@@ -16,27 +22,31 @@ namespace AlgoVisualizer
         private int _interval;
         private bool _algoRunning;
         private ObservableCollection<ArrayItem> _arrCopy;
-        private  string _contentPlayButton = "\u25B6";
+        private ObservableCollection<GraphItem> _graphCopy;
+        private string _contentPlayButton = "\u25B6";
         private bool _isPaused;
         private byte _stepHeight;
         private CancellationTokenSource _cancellationToken = new();
         private List<ArrayItem> _prevState;
         private int _search;
         private bool _steppingFlag = false;
-        private string _type;
+        private byte[,]? _adjMatrix;
         //-------------------Public variables-------------------
-        public ObservableCollection<string> Speeds {get; private set; }
+        public ObservableCollection<string> Speeds { get; private set; }
         public ICommand GenericCommand { get; }
         public ICommand PlayCommand { get; }
         public ObservableCollection<ArrayItem> SampleArray { get; private set; }
+        public ObservableCollection<GraphItem> SampleGraph { get; private set; }
         public Action CreateStepAction { get; set; }
+        public Action CreateEdgesAction { get; set; }
+        public Action ClearCanvasAction { get; set; }
         public List<ArrayItem> PrevState => _prevState;
         public bool AlgoCompleted { get; private set; }
         public bool AlgoReady { get; private set; } = true;
         public int HeightCounter { get; set; }
-
-
+        public bool isGraph { get; set; }
         //-------------------Data Binding Variables-------------------
+
         public byte StepHeight
         {
             get => _stepHeight;
@@ -87,28 +97,27 @@ namespace AlgoVisualizer
             }
         }
 
-        public string Type
-        {
-            get => _type;
-            set
-            {
-                _type = value;
-                OnPropertyChanged(nameof(Type));
-            }
-        }
         //-------------------Constructor-------------------
-        public CommonPageViewModel()
+        public CommonPageViewModel(bool isGraph)
         {
+            this.isGraph = isGraph;
             GenericCommand = new RelayCommand(ExecuteCommand);
             PlayCommand = new RelayCommand(PlayAlgoCommand);
-
-            SampleArray = new ObservableCollection<ArrayItem>();
-            _arrCopy = new ObservableCollection<ArrayItem>();
+            if (isGraph)
+            {
+                SampleGraph = new ObservableCollection<GraphItem>();
+                _graphCopy = new ObservableCollection<GraphItem>();
+            }
+            else
+            {
+                SampleArray = new ObservableCollection<ArrayItem>();
+                _arrCopy = new ObservableCollection<ArrayItem>();
+            }
+            CreateSample();
             _stepHeight = 0;
-            Speeds = ["0.5x", "1x", "1.5x", "2.0x"];
+            Speeds = ["0.5x", "1x", "1.5x", "2.0x", "5.0x"];
             SelectedSpeed = 1;
             _interval = 750;
-            CreateSample();
         }
 
         //-------------------Start Algo when Play Button Clicked-------------------
@@ -129,23 +138,105 @@ namespace AlgoVisualizer
         //-------------------Create Sample Array-------------------
         private void CreateSample()
         {
-            for (var i = 0; i < _random.Next(6, 20); i++){
+            CreateItems();
+            if(isGraph)
+                CreateAdjMatrix();
+        }
+        private void CreateItems()
+        {
+            int min = 0;
+            int max = 30;
 
-                int num = _random.Next(50);
-                SampleArray.Add(new ArrayItem{Value = num});
-                _arrCopy.Add(new ArrayItem{Value = num});
-
+            for (var i = 0; i < _random.Next(6, 20); i++)
+            {
+                int num = _random.Next(99);
+                
+                if (isGraph)
+                {
+                    int x = _random.Next(min, max);
+                    int y = _random.Next(250);
+                    SampleGraph.Add(new GraphItem { Value = i, X = x, Y = y });
+                    _graphCopy.Add(new GraphItem { Value = i, X = x, Y = y });
+                    min = (max + 35);
+                    max = (min + 30);
+                }
+                else
+                {
+                    SampleArray.Add(new ArrayItem { Value = num });
+                    _arrCopy.Add(new ArrayItem { Value = num });
+                }
             }
+        }
+
+        private void CreateAdjMatrix()
+        {
+            var count = SampleGraph.Count;
+            _adjMatrix = new byte[count, count];
+            for(int i = 0; i < count; i++)
+            {
+                for (int j = i + 1; j < count; j++) {
+                    if (_random.Next(4) == 0)
+                    {
+                        byte weight = (byte)_random.Next(20);
+                        _adjMatrix[i, j] = weight;
+                        _adjMatrix[j, i] = weight;
+                        CreateEdges(i,j);
+                    }
+                }
+            }
+            CreateEdgesAction?.Invoke();
+            for(int x = 0; x < count; x++)
+            {
+                for(int y = 0; y < count; y++)
+                {
+                    Debug.Write(" " + _adjMatrix[x, y]);
+                }
+                Debug.Write("\n");
+            }
+        }
+
+        private void CreateEdges(int row, int col)
+        {
+            int offset = 15;
+            var line = new Line
+            {
+                X1 = SampleGraph[row].X + offset,
+                Y1 = SampleGraph[row].Y + offset,
+                X2 = SampleGraph[col].X + offset,
+                Y2 = SampleGraph[col].Y + offset,
+                StrokeThickness = 2
+            };
+
+            // Create the multibinding
+            var multiBinding = new MultiBinding
+            {
+                Converter = new MultiColorConverter(),
+                Mode = BindingMode.OneWay
+            };
+
+            // Bind to IndexColor of both vertices
+            multiBinding.Bindings.Add(new Binding("IndexColor") { Source = SampleGraph[row], Mode = BindingMode.OneWay });
+            multiBinding.Bindings.Add(new Binding("IndexColor") { Source = SampleGraph[col], Mode = BindingMode.OneWay });
+
+            // Apply the MultiBinding to the Stroke property
+            BindingOperations.SetBinding(line, Line.StrokeProperty, multiBinding);
+
+            SampleGraph[row].Edge.Add(line);
+            _graphCopy[row].Edge.Add(line);
+            SampleGraph[col].Edge.Add(SampleGraph[row].Edge[^1]);
+            _graphCopy[col].Edge.Add(_graphCopy[row].Edge[^1]);
+
         }
         //-------------------Change Speed When Changed-------------------
         private void OnSpeedSelected()
         {
             _interval = SelectedSpeed switch
             {
-                0 => 1000,
+                0 => 1125,
                 1 => 750,
-                2 => 500,
-                3 => 250,
+                2 => 560,
+                3 => 375,
+                4 => 150,
                 _ => throw new Exception("Speed Not Found!")
             };
         }
@@ -158,13 +249,21 @@ namespace AlgoVisualizer
             switch (action)
             {
                 case "Refresh":
-                    SampleArray.Clear();
-                    _arrCopy.Clear();
+                    if (isGraph)
+                    {
+                        SampleGraph.Clear();
+                        _graphCopy.Clear();
+                        _adjMatrix = null;
+                        ClearCanvasAction?.Invoke();
+                    }
+                    else
+                    {
+                        SampleArray.Clear();
+                        _arrCopy.Clear();
+                    }                  
                     _cancellationToken.Cancel();
                     CreateSample();
                     Restart();
-                    break;
-                case "Add":
                     break;
                 case "Log":
                     ChangeLogSize();
@@ -196,8 +295,17 @@ namespace AlgoVisualizer
             }
             else if (AlgoCompleted)
             {
-                SampleArray = new ObservableCollection<ArrayItem>(_arrCopy.Select(item => item.Clone()));
-                OnPropertyChanged(nameof(SampleArray));
+                if (isGraph)
+                {
+                    SampleGraph = new ObservableCollection<GraphItem>(_graphCopy.Select(item => item.Clone()));
+                    OnPropertyChanged(nameof(SampleGraph));
+                }
+                else
+                {
+                    SampleArray = new ObservableCollection<ArrayItem>(_arrCopy.Select(item => item.Clone()));
+                    OnPropertyChanged(nameof(SampleArray));
+                }
+                
                 Restart();
             }
             else
@@ -230,7 +338,7 @@ namespace AlgoVisualizer
             Red
         }
         //-------------------Highlight Array Index-------------------
-        private void ToggleHighlightIndex(ArrayItem index, bool toggle = false, IndexColor color = IndexColor.Green)
+        private void ToggleHighlightIndex(IItem index, bool toggle = false, IndexColor color = IndexColor.Green)
         {
             if(!toggle)
             {
@@ -272,8 +380,13 @@ namespace AlgoVisualizer
         private async void StartAlgorithm(string algorithm)
         {
             _cancellationToken = new CancellationTokenSource();
-            _search = new Random().Next(0, SampleArray.Count - 1);
-            int searching = SampleArray[_search].Value;
+            int searching = 0;
+            if (!isGraph)
+            {
+                _search = _random.Next(0, SampleArray.Count - 1);
+                searching = SampleArray[_search].Value;
+            }
+
             try
             {
                 switch (algorithm)
@@ -295,6 +408,12 @@ namespace AlgoVisualizer
                         break;
                     case "FibonacciSearch":
                         await FibonacciSearch(searching);
+                        break;
+                    case "Dijkstra":
+                        await dijkstra(_random.Next(0, SampleGraph.Count - 1));
+                        break;
+                    case "Kruskal":
+                        await kruskal();
                         break;
                     default: throw new Exception("Algorithm Not Found!");
                 }
@@ -527,7 +646,7 @@ namespace AlgoVisualizer
             int fib1 = 0, fib2 = 1, fib3 = fib1 + fib2;
 
             // Find the smallest Fibonacci number greater than or equal to l
-            LogText += "\nFinding smaller Fibonacci number greater than or equal to l";
+            LogText += "\nFinding smaller Fibonacci number greater than or equal to " + l;
             await DelayTask();
             while (fib3 < l)
             {
@@ -589,5 +708,197 @@ namespace AlgoVisualizer
             }
             AlgorithmEnd();
         }
+
+        private async Task<int> minDistance(int[] dist,
+                    bool[] sptSet)
+        {
+            // Initialize min value
+            int min = int.MaxValue, min_index = -1;
+            int V = _adjMatrix.GetLength(0);
+            for (int v = 0; v < V; v++)
+                if (sptSet[v] == false && dist[v] <= min)
+                {
+                    min = dist[v];
+                    min_index = v;
+                }
+
+            return min_index;
+        }
+
+        //-------------------Dijkstra Algorithm-------------------
+        private async Task dijkstra(int src)
+        {
+            int V = _adjMatrix.GetLength(0);
+            LogText += "\nStarting from: " + src;
+            //Array to hold shortest distance
+            int[] dist = new int[V];
+
+            //True if shortest distance found
+            bool[] distFinalized = new bool[V];
+
+            // Initialize all distances as
+            // INFINITE and distFinalized[] as false
+            for (int i = 0; i < V; i++)
+            {
+                dist[i] = int.MaxValue;
+                distFinalized[i] = false;
+            }
+
+            // Distance of source vertex is 0
+            dist[src] = 0;
+
+            // Find shortest path for all vertices
+            for (int count = 0; count < V; count++)
+            {
+                
+                await DelayTask();
+                //Find min distance
+                int u = await minDistance(dist, distFinalized);
+                ToggleHighlightIndex(SampleGraph[u], true, IndexColor.Green);
+                await DelayTask();
+                // Mark the picked vertex as processed
+                distFinalized[u] = true;
+                LogText += "\n---Vertex " + u + " Processed---";
+
+                // Update dist value of the adjacent
+                // vertices of the picked vertex.
+                for (int v = 0; v < V; v++)
+                {
+                    
+                    // Update dist[v] only if is not in
+                    // distFinalized, there is an edge from u
+                    // to v, and total weight of path
+                    // from src to v through u is smaller
+                    // than current value of dist[v]
+                    if (!distFinalized[v] && _adjMatrix[u, v] != 0 &&
+                         dist[u] != int.MaxValue && dist[u] + _adjMatrix[u, v] < dist[v])
+                    {
+                        ToggleHighlightIndex(SampleGraph[v], true, IndexColor.Red);
+                        await DelayTask();
+                        dist[v] = dist[u] + _adjMatrix[u, v];
+                        LogText += "\nV(" + v + ") distance from V(" + src + "): " + dist[v];
+                        ToggleHighlightIndex(SampleGraph[v]);
+                    }
+                    
+                }
+
+            }
+            foreach(var item in distFinalized) Debug.Write(item + " ");
+            AlgorithmEnd();
+        }
+
+
+        // Finds MST using Kruskal's algorithm
+
+        private struct Edge : IComparable<Edge>
+        {
+            public int Source { get; set; }
+            public int Destination { get; set; }
+            public int Weight { get; set; }
+
+            public int CompareTo(Edge other)
+            {
+                return Weight.CompareTo(other.Weight);
+            }
+        }
+        private async Task kruskal()
+        {
+            int mincost = 0; // Cost of min MST.
+            int V = _adjMatrix.GetLength(0);
+            int[] parent = new int[V];
+            int[] rank = new int[V];
+            List<Edge> edges = new List<Edge>();
+            AddSortedEdges();
+            // Initialize sets of disjoint sets.
+            for (int i = 0; i < V; i++)
+            {
+                parent[i] = i;
+                rank[i] = 0;
+            }
+
+            // Include minimum weight edges one by one
+            int edge_count = 0;
+            List<int> exclude = new();
+            foreach (var edge in edges)
+            {
+                if (edge_count == V - 1)
+                    break;
+
+                int x = Find(edge.Source);
+                int y = Find(edge.Destination);
+
+                if (x != y) // If including this edge does not form a cycle
+                {
+                    await DelayTask();
+                    ToggleHighlightIndex(SampleGraph[edge.Source], true);
+                    ToggleHighlightIndex(SampleGraph[edge.Destination], true);
+                    LogText += string.Format("\nEdge {0}: ({1}, {2}) cost: {3}",
+                                                edge_count++, edge.Source, edge.Destination, edge.Weight);
+                    mincost += edge.Weight;
+                    Union(x, y);
+                }
+                else
+                {
+                    exclude.Add(edge.Source);
+                    exclude.Add(edge.Destination);
+                }
+                await DelayTask();
+            }
+            
+            LogText += "\nMinimum cost= " + mincost;
+            LogText += "\nEdges to exclude:";
+            for(int x = 0; x < exclude.Count - 1; x += 2) {
+
+                foreach (var edge in SampleGraph[exclude[x]].Edge) 
+                {
+                    if (edge.X2 == (SampleGraph[exclude[x + 1]].X + 15)) edge.Stroke = Brushes.Red;
+                }
+                LogText += " (" + exclude[x] + "," + exclude[x + 1] + ")";
+            }
+            if (exclude.Count < 1) LogText += " None";
+            AlgorithmEnd();
+
+
+            //------------------Inner Methods-------------------
+            void Union(int i, int j)
+            {
+                int xRoot = Find(i);
+                int yRoot = Find(j);
+
+                if (rank[xRoot] < rank[yRoot])
+                    parent[xRoot] = yRoot;
+                else if (rank[xRoot] > rank[yRoot])
+                    parent[yRoot] = xRoot;
+                else
+                {
+                    parent[yRoot] = xRoot;
+                    rank[xRoot]++;
+                }
+            }
+
+            int Find(int i)
+            {
+                if (parent[i] != i)
+                {
+                    parent[i] = Find(parent[i]);
+                }
+                return parent[i];
+
+                
+            }
+
+            void AddSortedEdges()
+            {
+                for (int i = 0; i < V; i++)
+                {
+                    for (int j = i + 1; j < V; j++)
+                    {
+                        if (_adjMatrix[i,j] != 0) edges.Add(new Edge { Source = i, Destination = j, Weight = _adjMatrix[i,j] });
+                    }
+                }
+                edges.Sort();
+            }
+        }
+        
     }
 }

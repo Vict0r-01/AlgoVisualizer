@@ -23,8 +23,6 @@
                 Grid.RowSpan="2"
                 Padding="5">
             <StackPanel>
-                <Button Content="Add" 
-            Style="{StaticResource ButtonStyle}"/>
                 <Button Content="Refresh"
             Style="{StaticResource ButtonStyle}"
             Command="{Binding GenericCommand}"
@@ -46,12 +44,9 @@
 
         <ScrollViewer Grid.Row="0" Grid.Column="1">
             <Grid Name="DynamicGrid">
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                </Grid.RowDefinitions>
-                <ItemsControl Name="ArrayControl" Grid.Row="{Binding StepHeight}"  ItemsSource="{Binding SampleArray}" 
-                              Background="Transparent"
-                              Style="{StaticResource ArrayStyle}">
+                <Canvas x:Name="OverlayCanvas" IsHitTestVisible="False"/>
+                <ItemsControl Name="StyleControl" Grid.Row="{Binding StepHeight}" 
+                                  Background="Transparent">
                 </ItemsControl>
             </Grid>
         </ScrollViewer>

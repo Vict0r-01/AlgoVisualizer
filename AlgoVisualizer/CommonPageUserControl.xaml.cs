@@ -3,29 +3,57 @@ using System.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using System.Windows.Shapes;
 
 namespace AlgoVisualizer
 {
-    /// <summary>
-    /// Interaction logic for CommonPageUserControl.xaml
-    /// </summary>
+
     public partial class CommonPageUserControl : UserControl
     {
         private readonly CommonPageViewModel _viewModel;
         private readonly List<Grid> _innerGrid;
         private readonly List<byte> _innerColumnTracker;
-        public CommonPageUserControl()
+        protected Canvas GraphCanvas { get; set; }
+        public bool isGraph { get; set; }
+        public CommonPageUserControl(bool isGraph = false)
         {
             InitializeComponent();
-
-            _viewModel = new CommonPageViewModel();
+            _viewModel = new CommonPageViewModel(isGraph);
             _innerGrid = new List<Grid>();
             _innerColumnTracker = new List<byte>();
 
             DataContext = _viewModel;
+            this.isGraph = isGraph;
+            
+            if (isGraph)
+            {
+                StyleControl.Style = Application.Current.FindResource("GraphStyle") as Style;
+                AddEdge();
+            }
+            else StyleControl.Style = Application.Current.FindResource("ArrayStyle") as Style;
+            
             _viewModel.CreateStepAction = UpdateGrid;
+            _viewModel.CreateEdgesAction = AddEdge;
+            _viewModel.ClearCanvasAction = ClearCanvas;
         }
 
+        private void ClearCanvas()
+        {
+            OverlayCanvas.Children.Clear();
+        }
+        private void AddEdge()
+        {
+            foreach (var item in _viewModel.SampleGraph)
+            {
+                foreach (var edge in item.Edge)
+                {
+                    if (edge != null && !OverlayCanvas.Children.Contains(edge))
+                    {
+                        OverlayCanvas.Children.Add(edge);
+                    }
+                }   
+            }
+        }
         private void ClearInnerGrid()
         {
             _innerGrid.Clear();
@@ -46,7 +74,7 @@ namespace AlgoVisualizer
             {
                 ClearGrid();
                 DynamicGrid.RowDefinitions.Add(rowDef);
-                DynamicGrid.Children.Add(ArrayControl);
+                DynamicGrid.Children.Add(StyleControl);
                 return;
             }
 
@@ -125,5 +153,7 @@ namespace AlgoVisualizer
         //-------------------Register the ParentIdentifier property-------------------
         public static readonly DependencyProperty ParentIdentifierProperty =
             DependencyProperty.Register("ParentIdentifier", typeof(string), typeof(CommonPageUserControl));
+
+        
     }
 }

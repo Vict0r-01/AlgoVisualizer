@@ -22,7 +22,6 @@ namespace AlgoVisualizer
         private readonly INavigationService _navigationService;
         private object _currentPage;
         private Rect _backgroundRec;
-        public bool isGraph { get; set; } = false;
         public ICommand NavTo { get; }
         public Rect BackgroundRec
         {
@@ -54,10 +53,6 @@ namespace AlgoVisualizer
         {
             string? action = parameter as string;
 
-            if(isGraph)
-            {
-
-            }
             switch (action)
             {
                 case "SelectionSort":
@@ -77,6 +72,12 @@ namespace AlgoVisualizer
                     break;
                 case "FibonacciSearch":
                     _navigationService.NavigateTo<FibonacciSearch>();
+                    break;
+                case "Dijkstra":
+                    _navigationService.NavigateTo<Dijkstra>();
+                    break;
+                case "Kruskal":
+                    _navigationService.NavigateTo<Kruskal>();
                     break;
                 default:
                     throw new Exception("Page not Found!");

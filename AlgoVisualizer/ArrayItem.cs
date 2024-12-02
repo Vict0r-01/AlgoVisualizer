@@ -9,7 +9,7 @@ using System.Windows.Media;
 
 namespace AlgoVisualizer
 {
-    public class ArrayItem : INotifyPropertyChanged
+    public class ArrayItem : INotifyPropertyChanged, IItem
     {
         private int _value;
         private Brush _indexColor = Brushes.Black;

@@ -11,6 +11,7 @@
                 <ResourceDictionary Source="Theme/ComboBoxTheme.xaml"/>
                 <ResourceDictionary Source="Theme/LogTheme.xaml"/>
                 <ResourceDictionary Source="Theme/ArrayTheme.xaml"/>
+                <ResourceDictionary Source="Theme/GraphTheme.xaml"/>
             </ResourceDictionary.MergedDictionaries>
          </ResourceDictionary>
     </Application.Resources>
